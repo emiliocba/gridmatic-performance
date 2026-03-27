@@ -122,6 +122,7 @@ function calcAnnual(data) {
       ret:   ((endV - startV) / startV) * 100,
       endV,
       avgMonthly,
+      completedMonths: done.length,
       isYtd: yrData.some(d => d.inProg),
     };
   }).filter(Boolean);
@@ -385,30 +386,7 @@ export default function PortfolioTracker() {
 
       {/* ── Chart ────────────────────────────────────────────── */}
       <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-
-          <div style={{ display: "flex", gap: 4 }}>
-            {["All", 2022, 2023, 2024, 2025, 2026].map(y => (
-              <button key={y} onClick={() => switchYear(y)} style={{
-                background:   activeYear === y ? (y === "All" ? BORDER_L : LIME) : "transparent",
-                color:        activeYear === y ? (y === "All" ? "#c8d0e0" : "#000") : "#404858",
-                border:       `1px solid ${activeYear === y ? (y === "All" ? BORDER_L : LIME) : BORDER}`,
-                borderRadius: 6,
-                padding:      "5px 12px",
-                fontSize:     12,
-                fontWeight:   700,
-                cursor:       "pointer",
-                transition:   "all 0.15s",
-                outline:      "none",
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = "scale(0.94)"}
-              onMouseUp={e   => e.currentTarget.style.transform = "scale(1)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
 
           <div style={{ display: "flex", gap: 4 }}>
             {[["value", "Portfolio Value"], ["monthly", "Monthly %"]].map(([v, l]) => (
@@ -481,56 +459,133 @@ export default function PortfolioTracker() {
       </div>
 
       {/* ── Annual summary ───────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 16 }}>
-        {annualData.map(({ yr, ret, endV, isYtd, avgMonthly }) => (
-          <div key={yr} onClick={() => switchYear(yr)} style={{
-            background:   activeYear === yr ? "rgba(204,255,0,0.05)" : BG_DARK,
-            border:       `1px solid ${activeYear === yr ? "rgba(204,255,0,0.18)" : BORDER}`,
-            borderRadius: 10,
-            padding:      "16px 16px",
-            cursor:       "pointer",
-            transition:   "border-color 0.15s, background 0.15s",
-          }}>
+      {/* ── Annual selector + stats ──────────────────────────── */}
+      {(() => {
+        const years = annualData.map(a => a.yr);
+        const currentAnn = activeYear === "All"
+          ? null
+          : annualData.find(a => a.yr === activeYear);
+        const currentIdx = years.indexOf(activeYear);
 
-            {/* ① Year */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <span style={{ color: "#c0c8d8", fontSize: 15, fontWeight: 800 }}>{yr}</span>
-              {isYtd && (
-                <span style={{ background: `${LIME}12`, color: LIME, border: `1px solid ${LIME}30`, fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 3, letterSpacing: 0.8 }}>
-                  YTD
-                </span>
-              )}
+        const prevYear = () => {
+          if (activeYear === "All") switchYear(years[years.length - 1]);
+          else if (currentIdx > 0) switchYear(years[currentIdx - 1]);
+        };
+        const nextYear = () => {
+          if (currentIdx < years.length - 1) switchYear(years[currentIdx + 1]);
+          else switchYear("All");
+        };
+        const canPrev = activeYear === "All" || currentIdx > 0;
+        const canNext = activeYear !== "All";
+
+        const btnStyle = (enabled) => ({
+          background: "transparent",
+          border: `1px solid ${enabled ? BORDER_L : BORDER}`,
+          borderRadius: 8,
+          color: enabled ? "#c0c8d8" : "#2a3040",
+          width: 36, height: 36,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: enabled ? "pointer" : "default",
+          fontSize: 16, fontWeight: 700,
+          transition: "all 0.15s",
+          flexShrink: 0,
+        });
+
+        return (
+          <div style={{ marginBottom: 16 }}>
+            {/* Selector row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              {/* Prev arrow */}
+              <button
+                onClick={canPrev ? prevYear : undefined}
+                style={btnStyle(canPrev)}
+                onMouseDown={e => canPrev && (e.currentTarget.style.transform = "scale(0.92)")}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >‹</button>
+
+              {/* Dropdown */}
+              <select
+                value={activeYear}
+                onChange={e => switchYear(e.target.value === "All" ? "All" : Number(e.target.value))}
+                style={{
+                  flex: 1,
+                  background: BG_DARK,
+                  border: `1px solid ${BORDER_L}`,
+                  borderRadius: 8,
+                  color: "#c0c8d8",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: "'Open Sans', sans-serif",
+                  padding: "8px 14px",
+                  cursor: "pointer",
+                  outline: "none",
+                  appearance: "none",
+                  textAlign: "center",
+                }}
+              >
+                <option value="All">All Time</option>
+                {years.map(y => (
+                  <option key={y} value={y}>{y}{annualData.find(a=>a.yr===y)?.isYtd ? " (YTD)" : ""}</option>
+                ))}
+              </select>
+
+              {/* Next arrow */}
+              <button
+                onClick={canNext ? nextYear : undefined}
+                style={btnStyle(canNext)}
+                onMouseDown={e => canNext && (e.currentTarget.style.transform = "scale(0.92)")}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >›</button>
             </div>
 
-            {/* ② Avg Monthly */}
-            <div style={{ marginBottom: 10 }}>
-              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Avg Monthly</p>
-              <span style={{ color: clr(avgMonthly ?? ret), fontSize: 20, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.5 }}>
-                {avgMonthly !== null ? fmtPct(avgMonthly) : "—"}
-              </span>
-            </div>
+            {/* Stats card — only shown when a specific year is selected */}
+            {currentAnn && (
+              <div style={{
+                background: "rgba(204,255,0,0.04)",
+                border: "1px solid rgba(204,255,0,0.14)",
+                borderRadius: 12,
+                padding: "18px 24px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1px 1fr 1px 1fr",
+                gap: 0,
+                alignItems: "center",
+              }}>
+                {/* Avg Monthly */}
+                <div style={{ padding: "0 20px 0 0" }}>
+                  <p style={{ color: "#404858", fontSize: 10, margin: "0 0 5px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Avg Monthly</p>
+                  <span style={{ color: clr(currentAnn.avgMonthly ?? currentAnn.ret), fontSize: 28, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.8 }}>
+                    {currentAnn.avgMonthly !== null ? fmtPct(currentAnn.avgMonthly) : "—"}
+                  </span>
+                </div>
 
-            <div style={{ height: 1, background: BORDER, margin: "0 0 10px" }} />
+                {/* Divider */}
+                <div style={{ background: BORDER, height: "100%", minHeight: 48 }} />
 
-            {/* ③ Without compounding */}
-            <div style={{ marginBottom: 8 }}>
-              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Without Compounding</p>
-              <span style={{ color: POS, fontSize: 14, fontWeight: 700, fontFamily: "'Courier New', monospace" }}>
-                {avgMonthly !== null ? fmtPct(avgMonthly * 12) : "—"}
-              </span>
-            </div>
+                {/* Without compounding */}
+                <div style={{ padding: "0 20px" }}>
+                  <p style={{ color: "#404858", fontSize: 10, margin: "0 0 5px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Without Compounding</p>
+                  <span style={{ color: POS, fontSize: 22, fontWeight: 800, fontFamily: "'Courier New', monospace", letterSpacing: -0.5 }}>
+                    {currentAnn.avgMonthly !== null ? fmtPct(currentAnn.avgMonthly * (currentAnn.isYtd ? currentAnn.completedMonths : 12)) : "—"}
+                  </span>
+                </div>
 
-            {/* ④ With compounding */}
-            <div>
-              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>With Compounding</p>
-              <span style={{ color: LIME, fontSize: 14, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.3 }}>
-                {fmtPct(ret)}
-              </span>
-            </div>
+                {/* Divider */}
+                <div style={{ background: BORDER, height: "100%", minHeight: 48 }} />
 
+                {/* With compounding */}
+                <div style={{ padding: "0 0 0 20px" }}>
+                  <p style={{ color: "#404858", fontSize: 10, margin: "0 0 5px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>With Compounding</p>
+                  <span style={{ color: LIME, fontSize: 22, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.5 }}>
+                    {fmtPct(currentAnn.ret)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* ── Monthly table ────────────────────────────────────── */}
       <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
@@ -566,35 +621,6 @@ export default function PortfolioTracker() {
 
         </div>
 
-        {/* Year total footer */}
-        {activeYear !== "All" && (() => {
-          const ann         = annualData.find(a => a.yr === activeYear);
-          const totalProfit = filtered.reduce((s, d) => s + d.profit, 0);
-          const endBal      = filtered[filtered.length - 1]?.balance || 0;
-          return (
-            <div style={{ display: "grid", gridTemplateColumns: COL, padding: "12px 24px 12px 27px", background: BG_DARK, borderTop: `1px solid ${BORDER_L}`, alignItems: "center" }}>
-              <span style={{ color: "#606878", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8 }}>
-                {activeYear} Total
-              </span>
-              <div style={{ textAlign: "right" }}>
-                <span style={{ color: clr(ann?.ret || 0), fontWeight: 900, fontSize: 14, fontFamily: "'Courier New', monospace" }}>
-                  {ann ? fmtPct(ann.ret) : "—"}
-                </span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <span style={{ color: clr(totalProfit), fontWeight: 700, fontSize: 12, fontFamily: "'Courier New', monospace" }}>
-                  {totalProfit >= 0 ? "+" : "−"}{fmtUSDT(Math.abs(totalProfit))}
-                </span>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <span style={{ color: "#808898", fontSize: 12, fontFamily: "'Courier New', monospace" }}>
-                  {fmtUSDT(endBal)}
-                </span>
-              </div>
-              <div />
-            </div>
-          );
-        })()}
       </div>
 
       {/* ── Footer ──────────────────────────────────────────── */}
