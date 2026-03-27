@@ -21,7 +21,7 @@ const BORDER_L = "#1e2530";
 
 const RAW_RETURNS = [
   [2022,"Jan",-2.1],[2022,"Feb",3.2],[2022,"Mar",4.8],
-  [2022,"Apr",-3.4],[2022,"May",-4.0],[2022,"Jun",-1.8],
+  [2022,"Apr",-3.4],[2022,"May",-7.41],[2022,"Jun",-1.8],
   [2022,"Jul",5.2],[2022,"Aug",3.1],[2022,"Sep",-2.3],
   [2022,"Oct",3.8],[2022,"Nov",-3.1],[2022,"Dec",2.4],
   [2023,"Jan",6.3],[2023,"Feb",3.8],[2023,"Mar",5.6],
@@ -152,7 +152,7 @@ function ChartTip({ active, payload, chartView }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div style={{ background: "#13161a", border: `1px solid ${BORDER_L}`, borderRadius: 8, padding: "10px 14px" }}>
+    <div style={{ background: "#1e2530", border: "1px solid rgba(204,255,0,0.2)", borderRadius: 8, padding: "10px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
       <p style={{ color: "#606878", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, margin: "0 0 6px" }}>
         {d.fullLabel}
       </p>
@@ -203,7 +203,7 @@ function TableRow({ d, i, isLast, COL }) {
       style={{
         display:             "grid",
         gridTemplateColumns: COL,
-        padding:             "11px 24px 11px 21px", // 3px less left to compensate accent border
+        padding:             "14px 24px 14px 21px", // 3px less left to compensate accent border
         borderBottom:        !isLast ? `1px solid ${BORDER}` : "none",
         borderLeft:          leftAccent,
         background:          hovered ? "rgba(255,255,255,0.025)" : baseBg,
@@ -214,7 +214,7 @@ function TableRow({ d, i, isLast, COL }) {
     >
       {/* Period */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ color: "#b0b8c8", fontWeight: 600, fontSize: 13 }}>{d.fullLabel}</span>
+        <span style={{ color: "#b0b8c8", fontWeight: 600, fontSize: 15 }}>{d.fullLabel}</span>
         {d.inProg && (
           <span style={{ background: `${LIME}10`, color: LIME, border: `1px solid ${LIME}30`, fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 3, letterSpacing: 0.8 }}>
             IN PROGRESS
@@ -224,33 +224,32 @@ function TableRow({ d, i, isLast, COL }) {
 
       {/* Monthly return */}
       <div style={{ textAlign: "right" }}>
-        <span style={{ color: clr(d.ret), fontWeight: 900, fontSize: 14, fontFamily: "'Courier New', monospace" }}>
+        <span style={{ color: clr(d.ret), fontWeight: 900, fontSize: 16, fontFamily: "'Courier New', monospace" }}>
           {fmtPct(d.ret)}
         </span>
         {d.inProg && (
           <p style={{ color: "#606878", fontSize: 9, margin: "2px 0 0", textAlign: "right" }}>
-            Target: {fmtPct(d.fullRet)}
           </p>
         )}
       </div>
 
       {/* P&L */}
       <div style={{ textAlign: "right" }}>
-        <span style={{ color: d.profit >= 0 ? POS : NEG, fontWeight: 700, fontSize: 12, fontFamily: "'Courier New', monospace" }}>
+        <span style={{ color: d.profit >= 0 ? POS : NEG, fontWeight: 700, fontSize: 14, fontFamily: "'Courier New', monospace" }}>
           {d.profit >= 0 ? "+" : "−"}{fmtUSDT(Math.abs(d.profit))}
         </span>
       </div>
 
       {/* Portfolio value */}
       <div style={{ textAlign: "right" }}>
-        <span style={{ color: "#606878", fontWeight: 600, fontSize: 12, fontFamily: "'Courier New', monospace" }}>
+        <span style={{ color: "#606878", fontWeight: 600, fontSize: 14, fontFamily: "'Courier New', monospace" }}>
           {fmtUSDT(d.balance)}
         </span>
       </div>
 
       {/* Cumulative return */}
       <div style={{ textAlign: "right" }}>
-        <span style={{ color: clr(d.cumRet), fontSize: 12, fontWeight: 800, fontFamily: "'Courier New', monospace" }}>
+        <span style={{ color: clr(d.cumRet), fontSize: 14, fontWeight: 800, fontFamily: "'Courier New', monospace" }}>
           {fmtPct(d.cumRet)}
         </span>
       </div>
@@ -306,7 +305,7 @@ export default function PortfolioTracker() {
   const COL = "2fr 1fr 1.4fr 1.7fr 1.4fr";
 
   return (
-    <div style={{ background: BG, minHeight: "100vh", fontFamily: "'Outfit', sans-serif", color: "#fff", padding: "28px 32px", boxSizing: "border-box" }}>
+    <div style={{ background: BG, minHeight: "100vh", fontFamily: "'Open Sans', sans-serif", color: "#fff", padding: "28px 32px", boxSizing: "border-box" }}>
 
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
@@ -470,7 +469,7 @@ export default function PortfolioTracker() {
               <YAxis tickFormatter={v => `${v}%`} tick={{ fill: "#404858", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
               <Tooltip content={p => <ChartTip {...p} chartView={chartView} />} />
               <ReferenceLine y={0} stroke={BORDER_L} />
-              <Bar dataKey="ret" radius={[3, 3, 0, 0]} maxBarSize={28}>
+              <Bar dataKey="ret" radius={[3, 3, 0, 0]} maxBarSize={28} cursor={false}>
                 {filtered.map((d, i) => (
                   <Cell key={i} fill={d.ret >= 0 ? POS : NEG} opacity={d.inProg ? 0.5 : 1} />
                 ))}
@@ -488,29 +487,47 @@ export default function PortfolioTracker() {
             background:   activeYear === yr ? "rgba(204,255,0,0.05)" : BG_DARK,
             border:       `1px solid ${activeYear === yr ? "rgba(204,255,0,0.18)" : BORDER}`,
             borderRadius: 10,
-            padding:      "14px 16px",
+            padding:      "16px 16px",
             cursor:       "pointer",
             transition:   "border-color 0.15s, background 0.15s",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ color: "#606878", fontSize: 12, fontWeight: 800 }}>{yr}</span>
+
+            {/* ① Year */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ color: "#c0c8d8", fontSize: 15, fontWeight: 800 }}>{yr}</span>
               {isYtd && (
                 <span style={{ background: `${LIME}12`, color: LIME, border: `1px solid ${LIME}30`, fontSize: 8, fontWeight: 800, padding: "2px 6px", borderRadius: 3, letterSpacing: 0.8 }}>
                   YTD
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 22, fontWeight: 900, margin: "0 0 6px", color: clr(ret), fontFamily: "'Courier New', monospace", letterSpacing: -0.7, lineHeight: 1.1 }}>
-              {fmtPct(ret)}
-            </p>
-            {avgMonthly !== null && (
-              <p style={{ color: "#606878", fontSize: 10, margin: "0 0 3px" }}>
-                avg <span style={{ color: clr(avgMonthly), fontWeight: 700 }}>{fmtPct(avgMonthly)}</span>/mo
-              </p>
-            )}
-            <p style={{ color: "#505868", fontSize: 10, margin: 0, fontFamily: "'Courier New', monospace" }}>
-              {fmtUSDT(endV)} USDT
-            </p>
+
+            {/* ② Avg Monthly */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Avg Monthly</p>
+              <span style={{ color: clr(avgMonthly ?? ret), fontSize: 20, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.5 }}>
+                {avgMonthly !== null ? fmtPct(avgMonthly) : "—"}
+              </span>
+            </div>
+
+            <div style={{ height: 1, background: BORDER, margin: "0 0 10px" }} />
+
+            {/* ③ Without compounding */}
+            <div style={{ marginBottom: 8 }}>
+              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>Without Compounding</p>
+              <span style={{ color: POS, fontSize: 14, fontWeight: 700, fontFamily: "'Courier New', monospace" }}>
+                {avgMonthly !== null ? fmtPct(avgMonthly * 12) : "—"}
+              </span>
+            </div>
+
+            {/* ④ With compounding */}
+            <div>
+              <p style={{ color: "#404858", fontSize: 10, margin: "0 0 3px", textTransform: "uppercase", letterSpacing: 0.9, fontWeight: 700 }}>With Compounding</p>
+              <span style={{ color: LIME, fontSize: 14, fontWeight: 900, fontFamily: "'Courier New', monospace", letterSpacing: -0.3 }}>
+                {fmtPct(ret)}
+              </span>
+            </div>
+
           </div>
         ))}
       </div>
