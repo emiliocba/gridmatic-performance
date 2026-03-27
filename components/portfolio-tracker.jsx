@@ -110,13 +110,18 @@ function calcAnnual(data) {
   return [2022, 2023, 2024, 2025, 2026].map(yr => {
     const yrData = data.filter(d => d.yr === yr);
     if (!yrData.length) return null;
-    const prev   = yr === 2022 ? null : data.find(d => d.yr === yr - 1 && d.mo === "Dec");
-    const startV = prev ? prev.balance : START_CAPITAL;
-    const endV   = yrData[yrData.length - 1].balance;
+    const prev      = yr === 2022 ? null : data.find(d => d.yr === yr - 1 && d.mo === "Dec");
+    const startV    = prev ? prev.balance : START_CAPITAL;
+    const endV      = yrData[yrData.length - 1].balance;
+    const done      = yrData.filter(d => !d.inProg);
+    const avgMonthly = done.length
+      ? done.reduce((s, d) => s + d.ret, 0) / done.length
+      : null;
     return {
       yr,
       ret:   ((endV - startV) / startV) * 100,
       endV,
+      avgMonthly,
       isYtd: yrData.some(d => d.inProg),
     };
   }).filter(Boolean);
@@ -301,7 +306,7 @@ export default function PortfolioTracker() {
   const COL = "2fr 1fr 1.4fr 1.7fr 1.4fr";
 
   return (
-    <div style={{ background: BG, minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: "#fff", padding: "28px 32px", boxSizing: "border-box" }}>
+    <div style={{ background: BG, minHeight: "100vh", fontFamily: "'Outfit', sans-serif", color: "#fff", padding: "28px 32px", boxSizing: "border-box" }}>
 
       {/* ── Header ──────────────────────────────────────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
@@ -478,7 +483,7 @@ export default function PortfolioTracker() {
 
       {/* ── Annual summary ───────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 16 }}>
-        {annualData.map(({ yr, ret, endV, isYtd }) => (
+        {annualData.map(({ yr, ret, endV, isYtd, avgMonthly }) => (
           <div key={yr} onClick={() => switchYear(yr)} style={{
             background:   activeYear === yr ? "rgba(204,255,0,0.05)" : BG_DARK,
             border:       `1px solid ${activeYear === yr ? "rgba(204,255,0,0.18)" : BORDER}`,
@@ -495,9 +500,14 @@ export default function PortfolioTracker() {
                 </span>
               )}
             </div>
-            <p style={{ fontSize: 22, fontWeight: 900, margin: "0 0 4px", color: clr(ret), fontFamily: "'Courier New', monospace", letterSpacing: -0.7, lineHeight: 1.1 }}>
+            <p style={{ fontSize: 22, fontWeight: 900, margin: "0 0 6px", color: clr(ret), fontFamily: "'Courier New', monospace", letterSpacing: -0.7, lineHeight: 1.1 }}>
               {fmtPct(ret)}
             </p>
+            {avgMonthly !== null && (
+              <p style={{ color: "#606878", fontSize: 10, margin: "0 0 3px" }}>
+                avg <span style={{ color: clr(avgMonthly), fontWeight: 700 }}>{fmtPct(avgMonthly)}</span>/mo
+              </p>
+            )}
             <p style={{ color: "#505868", fontSize: 10, margin: 0, fontFamily: "'Courier New', monospace" }}>
               {fmtUSDT(endV)} USDT
             </p>
